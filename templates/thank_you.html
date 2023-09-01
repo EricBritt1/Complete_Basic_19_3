@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1> Congratulations! You have completed the {{title}}! </h1>
+
+    <h2>Here are you responses:</h2>
+    <ul>
+        {% for response in responses %}
+            <ol>{{response}}</ol>
+        {% endfor %}
+    </ul>
+
+    <p> Thank you for your evaluation! Your responses have been recorded and will be thoroughly considered!</p>
+
+{% endblock %}

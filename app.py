@@ -39,12 +39,19 @@ def homepage():
 
 @app.route('/questions/<int:num>')
 def question(num):
-    """Displays survey questions with corresponding choices. Must put indicies of array for now. 0= question 1 and so forth"""
-    """Due to the steps of assignment at the moment this is route is only accessbile by user inputting corresponding question numbers into route varible"""
+    """Displays survey questions with corresponding choices. Submitting an answer takes USER to next question"""
+    """If user attemps to tinker with URL a message will flash, then they'll be redirected to original question they were on"""
+    """I am using unanswered_question_position variable to keep track of what question they are on based on amount of answers in responses"""
+    unanswered_question_position = len(responses)
     question_displayed = satisfaction_survey.questions[num].question
-    choices = question_displayed.choices
-    return render_template('questions.html', num=num, question_displayed=question_displayed, choices=choices)
-
+    choices = satisfaction_survey.questions[num].choices
+    if num == len(responses):
+        return render_template('questions.html', num=num, question_displayed=question_displayed, choices=choices)
+    else:
+        flash("Message for User: Survey questions must be completed in chronological order!", 'error')
+        return redirect(f'/questions/{unanswered_question_position}')
+        
+    
 @app.route('/questions', methods=['POST'])
 def answer():
     """When an individual answer is submitted the answer is then appended to the responses list"""
@@ -52,11 +59,23 @@ def answer():
     answer = request.form["choice"]
     responses.append(answer)
     next_question = len(responses)
-    return redirect(f"/questions/{next_question}")
+    if next_question < len(satisfaction_survey.questions):
+        return redirect(f"/questions/{next_question}")
+    else:
+            return redirect('/thank-you')
+
+@app.route('/thank-you')
+def thank_you():
+    """After the length of respones are equal to length of statisfaction_survey.questions this thank you page will be displayed to end the Survey."""
+    title = satisfaction_survey.title
+    return render_template('thank_you.html', title=title, responses=responses)
+
+
+
 
 """
 For Kwame:
-    The reason why I chose to use len is because it was a spur of the moment and I liked the idea. \
+    The reason why I chose to use len is because it was a spur of the moment and I liked the idea. 
         - If I answer a question then the length of responses array will be equal to one more than the current index of the current question
         - Then I can just redirect to the next question by using the length of the responses array
             Ex:
@@ -77,6 +96,12 @@ For Kwame:
             Keeping in mind that according to the assignment directions the USER must answer questions in chronological order. Won't be able to use url to skip beyond unanswered questions (Will be implemented way later)
                 - I was thinking of using some logic like this....
                     return redirect(f"/question/{next_question}") if len(respones) < len(satisfaction_survey.questions) else None
+                - The problem with this is that if the USER wants to restart the Survey then the survey will be stuck on last page. 
+
+                - What if I found got the index of the current question [0]. Then I did something like next_question = current_question + 1!
+                     current_question_index = (satisfaction_survey.questions.index(satisfaction_survey.questions[len(responses)].question) - 1)
+
+               - find index of current question. increment by one if less than len(questions).
 
 """
     
