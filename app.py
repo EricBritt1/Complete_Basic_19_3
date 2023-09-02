@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, flash, jsonify, redirect
+from flask import Flask, request, render_template, flash, jsonify, redirect, session
 from flask_debugtoolbar import DebugToolbarExtension
 from surveys import Survey, Question, satisfaction_survey
 
@@ -6,7 +6,7 @@ from surveys import Survey, Question, satisfaction_survey
 """
 Varible respones: Where we store the users answers to survey questions
 """
-responses = []
+responses_key = "responses"
 
 """
 An instance of the class Survey called statisfaction_survey. Used to test Survey functionality. Directions specifically state for now to use satisfication_survey.
@@ -35,6 +35,11 @@ def homepage():
     title = satisfaction_survey.title
     instructions = satisfaction_survey.instructions
     return render_template('start_survey.html', title=title, instructions=instructions)
+
+@app.route('/setup', methods=["POST"])
+def setup():
+    session[responses_key] = []
+    return redirect('/questions/0')
    
 
 @app.route('/questions/<int:num>')
@@ -42,10 +47,10 @@ def question(num):
     """Displays survey questions with corresponding choices. Submitting an answer takes USER to next question"""
     """If user attemps to tinker with URL a message will flash, then they'll be redirected to original question they were on"""
     """I am using unanswered_question_position variable to keep track of what question they are on based on amount of answers in responses"""
-    unanswered_question_position = len(responses)
+    unanswered_question_position = len(session["responses"])
     question_displayed = satisfaction_survey.questions[num].question
     choices = satisfaction_survey.questions[num].choices
-    if num == len(responses):
+    if num == len(session["responses"]):
         return render_template('questions.html', num=num, question_displayed=question_displayed, choices=choices)
     else:
         flash("Message for User: Survey questions must be completed in chronological order!", 'error')
@@ -56,9 +61,12 @@ def question(num):
 def answer():
     """When an individual answer is submitted the answer is then appended to the responses list"""
     """Buggy and not working properly. next_question = len(responses) in conjuction with how POST request work I believe is creating the issue."""
+
+    the_responses = session["responses"]
     answer = request.form["choice"]
-    responses.append(answer)
-    next_question = len(responses)
+    the_responses.append(answer)
+    session["responses"] = the_responses
+    next_question = len(session["responses"])
     if next_question < len(satisfaction_survey.questions):
         return redirect(f"/questions/{next_question}")
     else:
@@ -68,7 +76,7 @@ def answer():
 def thank_you():
     """After the length of respones are equal to length of statisfaction_survey.questions this thank you page will be displayed to end the Survey."""
     title = satisfaction_survey.title
-    return render_template('thank_you.html', title=title, responses=responses)
+    return render_template('thank_you.html', title=title, responses=session["responses"])
 
 
 
